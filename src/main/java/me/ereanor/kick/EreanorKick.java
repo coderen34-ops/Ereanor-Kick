@@ -21,10 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +41,8 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         public Map<String, Long> abonelik = new HashMap<>();   // kickKullanıcıId -> bitiş (ms)
         public Map<String, Long> elle = new HashMap<>();       // uuid -> bitiş (ms) (yönetici verdi)
         public Map<String, String> isimler = new HashMap<>();  // uuid -> son bilinen MC adı
-        public List<String> uygulanan = new ArrayList<>();     // suffix'i bizim verdiğimiz uuid'ler
+        public Map<String, String> uygulanan = new HashMap<>(); // uuid -> bizim verdiğimiz tag adı
+        public Map<String, Long> takipciler = new HashMap<>();  // kickKullanıcıId -> takip zamanı (ms)
         public boolean tagOlusturuldu;
         public String yenilemeToken = "";
     }
@@ -123,7 +122,8 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         if (veri.abonelik == null) veri.abonelik = new HashMap<>();
         if (veri.elle == null) veri.elle = new HashMap<>();
         if (veri.isimler == null) veri.isimler = new HashMap<>();
-        if (veri.uygulanan == null) veri.uygulanan = new ArrayList<>();
+        if (veri.uygulanan == null) veri.uygulanan = new HashMap<>();
+        if (veri.takipciler == null) veri.takipciler = new HashMap<>();
         if (veri.yenilemeToken == null) veri.yenilemeToken = "";
     }
 
@@ -149,8 +149,12 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
 
     // ------------------------------------------------------------------ tag işleri
 
-    private String suffixAdi() {
-        return getConfig().getString("tag.suffix-name", "abone").trim();
+    private String aboneTag() {
+        return getConfig().getString("tag.abone-adi", "abone").trim();
+    }
+
+    private String takipciTag() {
+        return getConfig().getString("tag.takipci-adi", "takipci").trim();
     }
 
     private void konsol(String komut) {
@@ -165,7 +169,8 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
             if (yap) veri.tagOlusturuldu = true;
         }
         if (!yap) return;
-        konsol("tag create " + suffixAdi() + " " + getConfig().getString("tag.create-format", "&a[Abone]"));
+        konsol("tag create " + aboneTag() + " " + getConfig().getString("tag.abone-format", "&a[Abone]"));
+        konsol("tag create " + takipciTag() + " " + getConfig().getString("tag.takipci-format", "&7[Takipçi]"));
         veriKaydet();
     }
 
@@ -197,26 +202,39 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         return Bukkit.getOfflinePlayer(u).getName();
     }
 
-    /** Ana iş parçacığında çağrılır. Süreye göre suffix'i verir ya da alır. */
+    private boolean takipciMi(UUID u) {
+        synchronized (kilit) {
+            for (Map.Entry<String, Bag> e : veri.baglar.entrySet()) {
+                if (u.toString().equals(e.getValue().uuid) && veri.takipciler.containsKey(e.getKey())) return true;
+            }
+        }
+        return false;
+    }
+
+    /** Ana iş parçacığında çağrılır. Abone > takipçi > hiçbiri sırasıyla suffix'i ayarlar. */
     private void yenile(UUID u) {
         long bitis = bitisHesapla(u);
         long tolerans = getConfig().getLong("tag.grace-days", 2) * 86_400_000L;
-        boolean aktif = bitis > 0 && System.currentTimeMillis() < bitis + tolerans;
+        boolean aboneAktif = bitis > 0 && System.currentTimeMillis() < bitis + tolerans;
+        String hedef = aboneAktif ? aboneTag() : (takipciMi(u) ? takipciTag() : null);
         String ad = adBul(u);
         if (ad == null) return;
-        boolean uygulandi;
-        synchronized (kilit) { uygulandi = veri.uygulanan.contains(u.toString()); }
-        if (aktif && !uygulandi) {
-            konsol("tag setsuffix " + ad + " " + suffixAdi());
-            synchronized (kilit) { veri.uygulanan.add(u.toString()); }
+        String mevcut;
+        synchronized (kilit) { mevcut = veri.uygulanan.get(u.toString()); }
+        Player p = Bukkit.getPlayer(u);
+        if (hedef != null && !hedef.equals(mevcut)) {
+            konsol("tag setsuffix " + ad + " " + hedef);
+            synchronized (kilit) { veri.uygulanan.put(u.toString(), hedef); }
             veriKaydet();
-            Player p = Bukkit.getPlayer(u);
-            if (p != null) p.sendMessage("§aKick aboneliğin tanındı, suffix'in verildi. Teşekkürler!");
-        } else if (!aktif && uygulandi) {
+            if (p != null) {
+                p.sendMessage(hedef.equals(aboneTag())
+                        ? "§aKick aboneliğin tanındı, Abone suffix'in verildi. Teşekkürler!"
+                        : "§7Kick takipçiliğin tanındı, Takipçi suffix'in verildi.");
+            }
+        } else if (hedef == null && mevcut != null) {
             konsol("tag removesuffix " + ad);
             synchronized (kilit) { veri.uygulanan.remove(u.toString()); }
             veriKaydet();
-            Player p = Bukkit.getPlayer(u);
             if (p != null) p.sendMessage("§eKick aboneliğin sona erdi, suffix'in kaldırıldı.");
         }
     }
@@ -224,7 +242,7 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
     private void hepsiniYenile() {
         Set<UUID> hepsi = new HashSet<>();
         synchronized (kilit) {
-            for (String s : veri.uygulanan) hepsi.add(UUID.fromString(s));
+            for (String s : veri.uygulanan.keySet()) hepsi.add(UUID.fromString(s));
             for (String s : veri.elle.keySet()) hepsi.add(UUID.fromString(s));
             for (Bag b : veri.baglar.values()) hepsi.add(UUID.fromString(b.uuid));
         }
@@ -277,6 +295,16 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
                         if (id > 0) abonelikGeldi(id, yazi(s, "username"), bitis);
                     }
                 }
+                case "channel.followed" -> {
+                    JsonObject s = o.getAsJsonObject("follower");
+                    if (s == null) s = o.getAsJsonObject("user");
+                    if (s == null) {
+                        getLogger().warning("channel.followed olayında takipçi alanı bulunamadı: " + o.keySet());
+                        return;
+                    }
+                    long id = sayi(s, "user_id");
+                    if (id > 0) takipGeldi(id, yazi(s, "username"));
+                }
                 case "chat.message.sent" -> {
                     JsonObject s = o.getAsJsonObject("sender");
                     String icerik = yazi(o, "content");
@@ -295,6 +323,17 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         synchronized (kilit) { veri.abonelik.put(Long.toString(kickId), bitis); }
         veriKaydet();
         getLogger().info("Kick aboneliği: " + kickAdi + " (" + kickId + ")");
+        Bukkit.getScheduler().runTask(this, () -> {
+            Bag b;
+            synchronized (kilit) { b = veri.baglar.get(Long.toString(kickId)); }
+            if (b != null) yenile(UUID.fromString(b.uuid));
+        });
+    }
+
+    private void takipGeldi(long kickId, String kickAdi) {
+        synchronized (kilit) { veri.takipciler.putIfAbsent(Long.toString(kickId), System.currentTimeMillis()); }
+        veriKaydet();
+        getLogger().info("Kick takipçisi: " + kickAdi + " (" + kickId + ")");
         Bukkit.getScheduler().runTask(this, () -> {
             Bag b;
             synchronized (kilit) { b = veri.baglar.get(Long.toString(kickId)); }

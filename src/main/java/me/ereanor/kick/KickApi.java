@@ -30,7 +30,7 @@ public final class KickApi {
     private static final String ID = "https://id.kick.com/oauth";
     private static final String[] OLAYLAR = {
             "channel.subscription.new", "channel.subscription.renewal",
-            "channel.subscription.gifts", "chat.message.sent"};
+            "channel.subscription.gifts", "channel.followed", "chat.message.sent"};
 
     private final EreanorKick plugin;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();

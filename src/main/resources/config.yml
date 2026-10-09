@@ -20,12 +20,14 @@ oauth:
   redirect-uri: "https://ALAN-ADIN/kick/callback"
 
 tag:
-  # TagPlugin'deki suffix tag'inin adı
-  suffix-name: "abone"
-  # Plugin ilk açılışta bir kere "tag create abone <biçim>" çalıştırır (false = kendin oluşturursun)
+  # TagPlugin'deki suffix tag adları. Abone aktifken Abone, değilse takipçi ise Takipçi, ikisi de yoksa suffix yok.
+  abone-adi: "abone"
+  abone-format: "&a[Abone]"       # yeşil
+  takipci-adi: "takipci"
+  takipci-format: "&7[Takipçi]"   # gri
+  # Plugin ilk açılışta iki tag'i bir kere "tag create" ile oluşturur (false = kendin oluşturursun)
   auto-create: true
-  create-format: "&a[Abone]"
-  # Abonelik bitiminden sonra suffix kaç gün daha kalsın
+  # Abonelik bitiminden sonra Abone suffix'i kaç gün daha kalsın
   grace-days: 2
 
 link:
