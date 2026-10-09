@@ -222,6 +222,12 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         String mevcut;
         synchronized (kilit) { mevcut = veri.uygulanan.get(u.toString()); }
         Player p = Bukkit.getPlayer(u);
+        if (p != null) {
+            // MeslekSistemi NPC indirimleri için: abone / takipci / yok
+            p.removeMetadata("ereanorkick_tier", this);
+            if (hedef != null) p.setMetadata("ereanorkick_tier",
+                    new org.bukkit.metadata.FixedMetadataValue(this, aboneAktif ? "abone" : "takipci"));
+        }
         if (hedef != null && !hedef.equals(mevcut)) {
             konsol("tag setsuffix " + ad + " " + hedef);
             synchronized (kilit) { veri.uygulanan.put(u.toString(), hedef); }
