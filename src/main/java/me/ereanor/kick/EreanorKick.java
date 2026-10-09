@@ -216,7 +216,7 @@ public final class EreanorKick extends JavaPlugin implements Listener, CommandEx
         long bitis = bitisHesapla(u);
         long tolerans = getConfig().getLong("tag.grace-days", 2) * 86_400_000L;
         boolean aboneAktif = bitis > 0 && System.currentTimeMillis() < bitis + tolerans;
-        String hedef = aboneAktif ? aboneTag() : (takipciMi(u) ? takipciTag() : null);
+        String hedef = aboneAktif ? aboneTag() : null; // sadece abone; takipci kaldirildi
         String ad = adBul(u);
         if (ad == null) return;
         String mevcut;
