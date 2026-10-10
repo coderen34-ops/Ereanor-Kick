@@ -34,14 +34,3 @@ jobs:
           git add -A
           git commit -q -m "derlenmis jar"
           git push -f origin jar
-      - name: Jar'i jar dalina koy
-        run: |
-          mkdir -p /tmp/out && cp target/*.jar /tmp/out/
-          git config user.name github-actions
-          git config user.email actions@github.com
-          git checkout --orphan jar
-          git rm -rf . -q
-          cp /tmp/out/*.jar .
-          git add -A
-          git commit -q -m "derlenmis jar"
-          git push -f origin jar
