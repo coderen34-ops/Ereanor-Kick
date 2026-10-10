@@ -1,0 +1,34 @@
+# EreanorKick ayarları
+kick:
+  # Kick Geliştirici sayfasındaki uygulamanın bilgileri. client-secret'ı SADECE sunucudaki bu dosyaya sen yaz.
+  client-id: ""
+  client-secret: ""
+  channel-slug: "ereanor"
+  # 0 = kanal adından kendiliğinden bulunur
+  broadcaster-user-id: 0
+
+webhook:
+  # Caddy/Cloudflare aynı makinede ise 127.0.0.1 bırak. Dışarıya doğrudan açacaksan 0.0.0.0 yap.
+  bind: "127.0.0.1"
+  port: 8765
+  path: "/kick/webhook"
+  # Kick uygulaması ayarlarına yazacağın adres: https://<alan-adı>/kick/webhook
+
+oauth:
+  # Sadece app token abonelik olaylarına yetmezse gerekir (/ereanorkick yetkilendir)
+  callback-path: "/kick/callback"
+  redirect-uri: "https://ALAN-ADIN/kick/callback"
+
+tag:
+  # TagPlugin'deki suffix tag adları. Abone aktifken Abone, değilse takipçi ise Takipçi, ikisi de yoksa suffix yok.
+  abone-adi: "abone"
+  abone-format: "&a[Abone]"       # yeşil
+  takipci-adi: "takipci"
+  takipci-format: "&7[Takipçi]"   # gri
+  # Plugin ilk açılışta iki tag'i bir kere "tag create" ile oluşturur (false = kendin oluşturursun)
+  auto-create: true
+  # Abonelik bitiminden sonra Abone suffix'i kaç gün daha kalsın
+  grace-days: 2
+
+link:
+  code-ttl-minutes: 10

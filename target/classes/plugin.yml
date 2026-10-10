@@ -1,0 +1,21 @@
+name: EreanorKick
+version: '1.0'
+main: me.ereanor.kick.EreanorKick
+api-version: '26.2'
+author: Ereanor
+description: Kick aboneliklerini TagPlugin suffix'ine (Abone) bağlar.
+softdepend: [TagPlugin]
+
+commands:
+  kickbagla:
+    description: Kick hesabını Minecraft hesabına bağlar
+    usage: /kickbagla [kaldir|durum]
+  ereanorkick:
+    description: EreanorKick yönetim komutu
+    usage: /ereanorkick <durum|yenile|yetkilendir|ver|al> [args]
+    permission: ereanorkick.admin
+
+permissions:
+  ereanorkick.admin:
+    description: EreanorKick yönetimi
+    default: op
